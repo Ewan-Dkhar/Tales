@@ -24,11 +24,26 @@ console = Console()
 
 
 def _narrate(evidence: Evidence, config, no_narrate: bool, output: str) -> str | None:
-    """Narrate the evidence, render it, and write the report. Returns the story."""
+    """Narrate the evidence, render it, and write the report. Returns the story.
+
+    A configured output path always yields a report: when narration is skipped or
+    the model cannot be reached, the raw evidence is written on its own.
+    """
+    text: str | None = None
     if no_narrate:
         console.print("[dim]Narration skipped (--no-narrate).[/dim]")
-        return None
+    else:
+        text = _tell_story(evidence, config)
 
+    if output:
+        with span("haunt.render", "render report"):
+            path = write_report(text, evidence, output)
+        console.print(f"\n[dim]Report written to {path}[/dim]")
+    return text
+
+
+def _tell_story(evidence: Evidence, config) -> str | None:
+    """Ask the local model for the story and print the panels. None if it stays silent."""
     engine = NarratorEngine(config)
     try:
         with console.status("[magenta]Summoning the ghost…[/magenta]"):
@@ -43,10 +58,6 @@ def _narrate(evidence: Evidence, config, no_narrate: bool, output: str) -> str |
         return None
 
     render_story(text, console)
-    if output:
-        with span("haunt.render", "render report"):
-            path = write_report(text, evidence, output)
-        console.print(f"\n[dim]Report written to {path}[/dim]")
     return text
 
 
@@ -73,14 +84,30 @@ def run(
     if output is not None:
         config.output = output
 
+    if not cmd:
+        console.print(
+            "[bold red]No command to run.[/bold red] "
+            "Try: haunt run -- python app.py"
+        )
+        raise typer.Exit(code=2)
+
     init_sentry(config)
     try:
         with transaction(f"haunt run: {' '.join(cmd)}"):
             with span("haunt.capture", "run command"):
-                raw = run_command(cmd)
+                try:
+                    raw = run_command(cmd)
+                except OSError as exc:
+                    console.print(
+                        f"[bold red]Could not start that command.[/bold red]\n{exc}"
+                    )
+                    raise typer.Exit(code=127) from None
             with span("haunt.gather", "gather evidence"):
                 evidence = build_evidence(raw, stderr_lines=config.stderr_lines)
-            _narrate(evidence, config, no_narrate, config.output)
+            if evidence.exit_code in (0, None):
+                console.print("[dim]The process survived. Nothing to bury.[/dim]")
+            else:
+                _narrate(evidence, config, no_narrate, config.output)
     finally:
         flush_sentry()
     _exit_for(evidence, exit_zero)

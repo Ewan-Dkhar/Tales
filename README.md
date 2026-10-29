@@ -6,9 +6,14 @@ to narrate the post-mortem as a noir ghost story — all offline, all on your ma
 
 Built for the DEV Hacktoberfest Open-Source AI Challenge: Week 4 ("Ghost in the Machine").
 
+**Full manual: [GUIDE.md](GUIDE.md) · [on the site](https://ewan-dkhar.github.io/Tales/guide.html)**
+— every flag, every field it records, configuration, model choice, Sentry tracing,
+recipes and troubleshooting.
+
 ## Install
 
 ```bash
+git clone https://github.com/Ewan-Dkhar/Tales && cd Tales
 uv venv
 uv pip install -e .
 # or: pip install -e .
@@ -23,14 +28,19 @@ ollama pull gemma2:9b    # or gemma2:2b for a fast demo
 ## Use
 
 ```bash
-haunt run -- python app.py        # wrap a process; narrate if it crashes
-haunt run --no-narrate -- ./bin   # capture evidence only
+haunt run -- python app.py        # wrap a process; narrate its death
+haunt run --no-narrate -- ./bin   # record the evidence, skip the model
 haunt analyze crash.log           # narrate an existing log
 haunt demo                        # run a bundled crashing program
 haunt config                      # show resolved configuration
 ```
 
-A report is written to `GHOST_REPORT.md` (override with `-o`).
+Always pass the wrapped command after `--`, or its flags are parsed as `haunt`'s.
+
+A report is written to `GHOST_REPORT.md` (override with `-o`, skip with `-o ""`).
+It is written whenever an output path is set — if narration is skipped or the model
+is unreachable, the raw evidence is still saved. A process that exits `0` has not
+died: `haunt run` says so and writes nothing.
 
 ## How it works
 
@@ -75,7 +85,8 @@ export SENTRY_DSN="https://<key>@<org>.ingest.sentry.io/<project>"
 ## Landing page
 
 The site in `docs/` is plain static HTML, CSS and a little JavaScript — no build step.
-Served by GitHub Pages from `main` at `https://ewan-dkhar.github.io/Tales/`.
+Served by GitHub Pages from `main` at `https://ewan-dkhar.github.io/Tales/`, with the
+manual at `/guide.html`.
 
 ```bash
 python3 -m http.server -d docs 8099   # preview locally
@@ -85,6 +96,10 @@ python3 -m http.server -d docs 8099   # preview locally
 demo run, the column carries the argument, and the two-ink comparison sets recorded
 evidence in mono against narrated prose in serif. The hero line is the model's actual
 first sentence about the bundled demo crash.
+
+`docs/guide.html` is the same manual as `GUIDE.md`, in the same two inks: mono for
+anything the tool actually prints, serif for the reasoning around it. Keep the two in
+sync when the CLI changes.
 
 ## Development
 

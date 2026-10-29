@@ -27,6 +27,7 @@
       <a href="#how">How it works</a>
       <a href="#report">The report</a>
       <a href="#install">Install</a>
+      <a href="guide.html">Guide</a>
       <a href="https://github.com/Ewan-Dkhar/Tales">GitHub</a>
     </nav>
   </header>
@@ -222,7 +223,11 @@ ZeroDivisionError: division by zero",
             </tr>
             <tr>
               <th scope="row">The report</th>
-              <td><code>GHOST_REPORT.md</code> holds the story, and below it the raw evidence as JSON, so a claim in the prose can be checked against what was recorded.</td>
+              <td><code>GHOST_REPORT.md</code> holds the story, and below it the raw evidence as JSON, so a claim in the prose can be checked against what was recorded. It is written whenever an output path is set — skip the model and the evidence still ships.</td>
+            </tr>
+            <tr>
+              <th scope="row">A clean exit</th>
+              <td>If the wrapped process exits <code>0</code>, <code>haunt</code> stays quiet: no story, no report. There is no death to narrate, and inventing one is the failure mode this tool exists to avoid.</td>
             </tr>
             <tr>
               <th scope="row">Existing logs</th>
@@ -246,11 +251,12 @@ ZeroDivisionError: division by zero",
         <div class="flow">
           <ul class="closing-cmds">
             <li><code>haunt run -- python app.py</code><span>wrap a process, narrate it if it fails</span></li>
-            <li><code>haunt run --no-narrate -- ./bin</code><span>collect the evidence and stay quiet</span></li>
+            <li><code>haunt run --no-narrate -- ./bin</code><span>record the evidence without waking the model</span></li>
             <li><code>haunt analyze crash.log</code><span>narrate a log you already have</span></li>
             <li><code>haunt demo</code><span>bury the bundled program</span></li>
           </ul>
           <p class="caption caption-gap">Pass the command after <code>--</code>, or the flags of the wrapped program are read as <code>haunt</code>&rsquo;s own.</p>
+          <p class="doc-next"><a href="guide.html">Read the full manual &mdash; every flag, field and failure mode &rarr;</a></p>
         </div>
       </div>
     </section>
@@ -261,6 +267,7 @@ ZeroDivisionError: division by zero",
     <p>Tales<br>MIT</p>
     <div>
       <p class="foot-links">
+        <a href="guide.html">Guide</a>
         <a href="https://github.com/Ewan-Dkhar/Tales">Source</a>
         <a href="https://dev.to/ewansalandkhar">The write-up</a>
         <a href="https://ewansalan-dkhar.sentry.io/explore/traces/?project=4512338474238032">Traces</a>

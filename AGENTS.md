@@ -14,7 +14,7 @@ ollama pull gemma2:2b        # fast demo model; default config uses gemma2:9b
 ## Commands
 
 ```bash
-.venv/bin/haunt run --no-narrate -- python app.py   # capture only
+.venv/bin/haunt run --no-narrate -- python app.py   # record evidence only
 .venv/bin/haunt run -- python app.py                # capture + narrate
 .venv/bin/haunt analyze crash.log
 .venv/bin/haunt demo
@@ -23,7 +23,9 @@ ollama pull gemma2:2b        # fast demo model; default config uses gemma2:9b
 
 - Always pass the wrapped command after `--`. Without it, Click rejects flags like `-c` as unknown options.
 - The report defaults to `GHOST_REPORT.md`; use `-o ""` to skip writing it.
-- `haunt run` propagates the wrapped process's exit code; `haunt demo` always exits 0.
+- A report is written whenever `-o` is set, including when narration is skipped or Ollama is down (the evidence appendix always ships).
+- A wrapped process that exits 0 is not narrated and writes nothing: no death, no story.
+- `haunt run` propagates the wrapped process's exit code (capped at 125); `haunt demo` always exits 0.
 - When Ollama is unreachable, `_narrate` prints a friendly error and returns; it does not crash the CLI.
 
 ## Verify
@@ -46,6 +48,7 @@ Flow: `capture.run_command` → `gather.build_evidence` → `prompt.build_messag
 - Prompt must forbid invented facts; keep the raw-evidence appendix in `render.build_report_markdown`.
 - `demo_crash.py` is intentionally a crashing module used by `haunt demo`; do not "fix" the division by zero.
 - `docs/` is the landing page (static, no build step), served by GitHub Pages from `main`. Keep it dependency-free — no bundler, no framework — and keep its copy honest: every example on the page must come from a real run.
+- `GUIDE.md` and `docs/guide.html` are the same manual in two forms. Change both together; every command, flag and field in them must match `haunt/`.
 
 ## Config
 

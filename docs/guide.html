@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Using Tales — the manual</title>
+<link rel="canonical" href="https://ewan-dkhar.github.io/Tales/guide.html">
+<meta name="description" content="The full manual for haunt: every command and flag, the evidence it records, the report it writes, configuration, model choice, Sentry tracing, recipes and troubleshooting.">
+<meta name="theme-color" content="#e8e5eb">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Using Tales — the manual">
+<meta property="og:description" content="Every command and flag, what gets recorded, how to configure it, and the things haunt deliberately will not do.">
+<meta property="og:url" content="https://ewan-dkhar.github.io/Tales/guide.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="shell">
+
+  <header class="masthead">
+    <a class="wordmark" href="./">Tales<span>haunt, a post-mortem narrator</span></a>
+    <nav aria-label="Sections">
+      <a href="./">Overview</a>
+      <a href="guide.html" aria-current="page">Guide</a>
+      <a href="https://github.com/Ewan-Dkhar/Tales">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main">
+
+    <div class="doc-hero">
+      <p class="doc-hero-kicker">the manual · v0.1</p>
+      <h1 class="doc-hero-title">How to use Tales</h1>
+      <p class="doc-hero-lede">
+        Tales is the project. <code>haunt</code> is the command it installs: it runs a process,
+        records what happened when it died, and asks a local open-weight model to narrate the
+        death. This page is the whole of it — every flag, every field it collects, what it
+        refuses to do, and how to check the ghost&rsquo;s work.
+      </p>
+
+      <nav class="doc-toc" aria-labelledby="toc-title">
+        <p class="doc-toc-head" id="toc-title">Contents</p>
+        <ol>
+          <li><a href="#install"><span class="n">01</span>Install</a></li>
+          <li><a href="#ways"><span class="n">02</span>Three ways in</a></li>
+          <li><a href="#run"><span class="n">03</span>haunt run</a></li>
+          <li><a href="#analyze"><span class="n">04</span>haunt analyze</a></li>
+          <li><a href="#demo"><span class="n">05</span>haunt demo</a></li>
+          <li><a href="#config"><span class="n">06</span>haunt config</a></li>
+          <li><a href="#options"><span class="n">07</span>Options and exit codes</a></li>
+          <li><a href="#report"><span class="n">08</span>The report</a></li>
+          <li><a href="#evidence"><span class="n">09</span>What gets collected</a></li>
+          <li><a href="#config-file"><span class="n">10</span>Configuration</a></li>
+          <li><a href="#model"><span class="n">11</span>Choosing a model</a></li>
+          <li><a href="#sentry"><span class="n">12</span>Sentry tracing</a></li>
+          <li><a href="#recipes"><span class="n">13</span>Recipes</a></li>
+          <li><a href="#troubleshooting"><span class="n">14</span>Troubleshooting</a></li>
+          <li><a href="#how"><span class="n">15</span>How it works</a></li>
+          <li><a href="#limits"><span class="n">16</span>Limits</a></li>
+        </ol>
+      </nav>
+    </div>
+
+    <section class="section" id="install" aria-labelledby="install-title">
+      <div class="section-head">
+        <p class="section-kicker">01 · install</p>
+        <h2 class="section-title" id="install-title">Python, Ollama, and one entry point.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body">
+          <p>
+            You need <strong>Python 3.11 or newer</strong> and <strong>Ollama</strong>, running as
+            a separate daemon. The package itself does not start the model server.
+          </p>
+
+          <div class="install">
+            <div class="install-head">
+              <span><em>install</em> &nbsp;— installs the <code>haunt</code> command</span>
+              <button class="copy" type="button" data-copy="install-cmds" aria-describedby="copy-status">Copy</button>
+              <span class="sr-only" id="copy-status" role="status" aria-live="polite"></span>
+            </div>
+<pre id="install-cmds"><span class="c">$</span> git clone https://github.com/Ewan-Dkhar/Tales
+<span class="c">$</span> cd Tales
+<span class="c">$</span> uv venv
+<span class="c">$</span> uv pip install -e .
+<span class="c">$</span> ollama serve
+<span class="c">$</span> ollama pull gemma2:2b
+<span class="d"># then, to see the whole pipeline once:</span>
+<span class="c">$</span> .venv/bin/haunt demo</pre>
+          </div>
+
+          <p>
+            <code>uv pip install -e .</code> puts a <code>haunt</code> script in
+            <code>.venv/bin/</code>. Call it by path, or activate the environment and type
+            <code>haunt</code>. With plain <code>pip</code> it is the same inside any virtual
+            environment:
+          </p>
+
+          <div class="doc-code">
+<pre><span class="c">$</span> python -m venv .venv &amp;&amp; source .venv/bin/activate
+<span class="c">$</span> pip install -e .
+<span class="c">$</span> haunt --help</pre>
+          </div>
+
+          <p>Three commands tell you whether the parts agree with each other:</p>
+          <ul>
+            <li><code>haunt config</code> — the resolved configuration, as JSON.</li>
+            <li><code>haunt demo</code> — a bundled crash, narrated end to end.</li>
+            <li><code>haunt run -- python -c "raise SystemExit(1)"</code> — the smallest real thing you can wrap.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="ways" aria-labelledby="ways-title">
+      <div class="section-head">
+        <p class="section-kicker">02 · three ways in</p>
+        <h2 class="section-title" id="ways-title">The process has not died yet, or it already has.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body doc-body--wide">
+          <table class="doc-table">
+            <thead>
+              <tr><th scope="col">Command</th><th scope="col">Use it when</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>haunt run -- &lt;cmd&gt;</code></td><td>The process has not died yet and you want to watch it happen.</td></tr>
+              <tr><td><code>haunt analyze &lt;log&gt;</code></td><td>It already died, and you kept the log.</td></tr>
+              <tr><td><code>haunt demo</code></td><td>You want to see the tool work without breaking anything of your own.</td></tr>
+            </tbody>
+          </table>
+          <p>
+            All three funnel into the same contract — <code>haunt.models.Evidence</code> — so the
+            panels, the story and the report have the same shape whichever way you arrived.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="run" aria-labelledby="run-title">
+      <div class="section-head">
+        <p class="section-kicker">03 · haunt run</p>
+        <h2 class="section-title" id="run-title">Wrap a process and wait for the death.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body">
+          <div class="doc-code">
+            <p class="doc-code-label">usage</p>
+<pre>haunt run [OPTIONS] -- COMMAND [ARGS...]</pre>
+          </div>
+
+          <p>
+            <code>haunt</code> starts <code>COMMAND</code>, waits for it to exit, and gathers the
+            evidence if the process did not survive. Options before <code>--</code> belong to
+            <code>haunt</code>; everything after it belongs to your program.
+          </p>
+
+          <div class="doc-code">
+            <p class="doc-code-label">examples</p>
+<pre><span class="c">$</span> haunt run -- python app.py                 <span class="d"># narrate the failure</span>
+<span class="c">$</span> haunt run -- pytest -q tests/              <span class="d"># flags pass through after --</span>
+<span class="c">$</span> haunt run -m gemma2:2b -- ./bin/worker     <span class="d"># another model, one run</span>
+<span class="c">$</span> haunt run -o reports/last-crash.md -- ./job.sh
+<span class="c">$</span> haunt run --no-narrate -- ./job.sh         <span class="d"># evidence only</span>
+<span class="c">$</span> haunt run --exit-zero -- ./job.sh          <span class="d"># always exit 0</span></pre>
+          </div>
+
+          <div class="doc-note doc-note--warn">
+            <span class="label">always use the separator</span>
+            <p>
+              Without <code>--</code>, <code>haunt</code> parses the first arguments itself. A
+              wrapped program&rsquo;s <code>-o</code>, <code>-m</code>, <code>--model</code>,
+              <code>--output</code>, <code>--no-narrate</code>, <code>--exit-zero</code> or
+              <code>--help</code> would be consumed by <code>haunt</code> instead of reaching it;
+              anything else fails loudly with <code>No such option</code>. The separator removes
+              the ambiguity entirely.
+            </p>
+          </div>
+
+          <h3>What happens to the process&rsquo;s output</h3>
+          <p>
+            <code>stdout</code> and <code>stderr</code> are <strong>captured, not streamed</strong>.
+            Your program&rsquo;s output goes into a pipe for the evidence, so it does not appear live
+            in the terminal, and the child does not see a TTY: progress bars, colour and
+            line-buffering behave the way they do when output is piped. The last
+            <code>stderr_lines</code> lines of each stream — 100 by default — end up in the report.
+          </p>
+
+          <h3>Exit codes</h3>
+          <p><code>haunt run</code> is a wrapper, so it exits the way your process did.</p>
+
+          <table class="doc-table">
+            <thead>
+              <tr><th scope="col">The wrapped process</th><th scope="col"><code>haunt run</code> exits</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>exits <code>0</code></td><td><code>0</code> — and nothing is narrated, because nothing died</td></tr>
+              <tr><td>exits <code>3</code></td><td><code>3</code></td></tr>
+              <tr><td>exits <code>130</code></td><td><code>125</code> — capped, so it never collides with shell conventions</td></tr>
+              <tr><td>is killed by <code>SIGSEGV</code></td><td><code>11</code> — the signal number</td></tr>
+              <tr><td>could not be started</td><td><code>127</code></td></tr>
+              <tr><td>was never named on the command line</td><td><code>2</code></td></tr>
+            </tbody>
+          </table>
+
+          <p>
+            <code>--exit-zero</code> overrides all of it and forces <code>0</code>, which is what
+            <code>haunt demo</code> uses so a demonstration never fails your shell.
+          </p>
+
+          <h3>A process that survives</h3>
+          <p>
+            If the command exits cleanly, <code>haunt</code> prints
+            <code>The process survived. Nothing to bury.</code> and writes no story and no report.
+            There is no death to narrate, and inventing one would be exactly the failure mode this
+            tool exists to avoid.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="analyze" aria-labelledby="analyze-title">
+      <div class="section-head">
+        <p class="section-kicker">04 · haunt analyze</p>
+        <h2 class="section-title" id="analyze-title">A log is a partial witness.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body">
+          <div class="doc-code">
+            <p class="doc-code-label">usage</p>
+<pre>haunt analyze [OPTIONS] LOGFILE</pre>
+          </div>
+
+          <p>
+            Narrates a death that already happened, from a file you kept — a container log, a CI
+            run, a machine you do not want to re-crash.
+          </p>
+
+          <div class="doc-code">
+            <p class="doc-code-label">examples</p>
+<pre><span class="c">$</span> docker logs haunted-app &gt; crash.log
+<span class="c">$</span> haunt analyze crash.log
+<span class="c">$</span> haunt analyze crash.log -m gemma2:9b -o postmortem.md
+<span class="c">$</span> haunt analyze crash.log --no-narrate -o evidence.md</pre>
+          </div>
+
+          <p>
+            The file is the only witness, so <code>exit_code</code> and <code>signal</code> are
+            <code>null</code>, <code>duration_s</code> is <code>0.0</code>, and
+            <code>recent_files</code> is empty. It still extracts the Python traceback if there is
+            one, and it still reads the git context of <em>your current directory</em>, which is
+            usually what makes the narration worth reading.
+          </p>
+          <p>
+            A missing file exits <code>2</code>. Otherwise <code>analyze</code> exits
+            <code>0</code>: it did not run anything, so it has no status to report.
+            <code>--exit-zero</code> does not exist here.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="demo" aria-labelledby="demo-title">
+      <div class="section-head">
+        <p class="section-kicker">05 · haunt demo</p>
+        <h2 class="section-title" id="demo-title">Bury the bundled program.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body">
+          <div class="doc-code">
+            <p class="doc-code-label">usage</p>
+<pre><span class="c">$</span> haunt demo                  <span class="d"># the default model</span>
+<span class="c">$</span> haunt demo -m gemma2:2b     <span class="d"># the fast one</span>
+<span class="c">$</span> haunt demo -o ""            <span class="d"># panels only, no file</span></pre>
+          </div>
+          <p>
+            It runs <code>haunt/demo_crash.py</code> with the interpreter that is running
+            <code>haunt</code>, and narrates the resulting <code>ZeroDivisionError</code>. The demo
+            program crashing is the point; it is not a bug to fix. <code>demo</code> always exits
+            <code>0</code>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="config" aria-labelledby="config-title">
+      <div class="section-head">
+        <p class="section-kicker">06 · haunt config</p>
+        <h2 class="section-title" id="config-title">What a run will actually use.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body">
+          <p>
+            <code>haunt config</code> prints the resolved configuration as JSON — defaults merged
+            with <code>~/.haunt/config.toml</code> and the environment.
+          </p>
+          <div class="doc-note">
+            <span class="label">careful with the output</span>
+            <p>
+              It includes <code>sentry_dsn</code> when one is configured. Do not paste it into an
+              issue. <code>voice</code> also appears; it is a placeholder and is not implemented.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="options" aria-labelledby="options-title">
+      <div class="section-head">
+        <p class="section-kicker">07 · options and exit codes</p>
+        <h2 class="section-title" id="options-title">Five flags, in total.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body doc-body--wide">
+          <div class="doc-scroll" role="region" aria-label="Options reference" tabindex="0">
+            <table class="doc-table doc-table--wide">
+              <thead>
+                <tr><th scope="col">Option</th><th scope="col">Commands</th><th scope="col">Meaning</th></tr>
+              </thead>
+            <tbody>
+              <tr><td><code>--model</code>, <code>-m</code></td><td>run, analyze, demo</td><td>Any Ollama model tag. Overrides the configured model for this run.</td></tr>
+              <tr><td><code>--output</code>, <code>-o</code></td><td>run, analyze, demo</td><td>Where to write the report. <code>-o ""</code> writes nothing.</td></tr>
+              <tr><td><code>--no-narrate</code></td><td>run, analyze, demo</td><td>Skip the model. The evidence is still collected and still written to <code>-o</code>.</td></tr>
+              <tr><td><code>--exit-zero</code></td><td>run</td><td>Always exit <code>0</code>, even if the process failed.</td></tr>
+              <tr><td><code>--help</code></td><td>all</td><td>Usage for that command.</td></tr>
+            </tbody>
+          </table>
+          </div>
+          <p>
+            Command-line flags beat environment variables, which beat
+            <code>~/.haunt/config.toml</code>, which beats the built-in defaults.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="report" aria-labelledby="report-title">
+      <div class="section-head">
+        <p class="section-kicker">08 · the report</p>
+        <h2 class="section-title" id="report-title">A story with a receipt stapled to it.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body">
+          <p>
+            The report is written to <code>GHOST_REPORT.md</code> in the current directory unless
+            <code>-o</code> says otherwise — and it is written <strong>whenever an output path is
+            set</strong>, including when narration was skipped or the model could not be reached.
+            In that case the story is replaced by one line:
+          </p>
+
+          <div class="doc-code">
+            <p class="doc-code-label">a report with no story</p>
+<pre># 👻 Ghost Report
+
+_Summoned by haunt at 2026-10-29T09:26:55.060260+00:00_
+
+_The ghost did not speak. The evidence it was given is recorded below, unchanged._
+
+---
+
+## Raw Evidence</pre>
+          </div>
+
+          <p>A full report is five sections the prompt fixes, then the appendix.</p>
+
+          <table class="doc-table">
+            <thead>
+              <tr><th scope="col">Section</th><th scope="col">What it argues from</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">The Crash Site</th><td>the command, the working directory, the branch, how long it survived</td></tr>
+              <tr><th scope="row">Last Words</th><td>the exit code, any signal, the tail of stdout and stderr</td></tr>
+              <tr><th scope="row">Prime Suspects</th><td>the traceback, the recent commits, the files you changed but never committed</td></tr>
+              <tr><th scope="row">The Epitaph</th><td>one line, quoted back from the evidence</td></tr>
+              <tr><th scope="row">How to Prevent the Haunting</th><td>one concrete change the evidence supports</td></tr>
+            </tbody>
+          </table>
+
+          <p>
+            Here is a real report from a crash with no traceback at all — <code>ollama serve</code>
+            run while the daemon was already listening. The narration is verbatim; the JSON is
+            abridged for width, but the report always carries the whole block.
+          </p>
+
+          <div class="narration doc-quote">
+            <blockquote>
+              <p>&ldquo;Its final words echoed through the silent servers: &lsquo;Error: listen tcp
+              127.0.0.1:11434: bind: address already in use.&rsquo; The Program had been born of a
+              dream to give life to the tales of the fallen.&rdquo;</p>
+            </blockquote>
+            <p class="caption">Last Words, from a real <code>haunt run -- ollama serve</code>.</p>
+          </div>
+
+          <div class="doc-code">
+            <p class="doc-code-label">Raw Evidence · abridged</p>
+<pre>{
+  <span class="k">"command"</span>: ["ollama", "serve"],
+  <span class="k">"exit_code"</span>: <span class="bad">1</span>,
+  <span class="k">"signal"</span>: null,
+  <span class="k">"duration_s"</span>: 0.015,
+  <span class="k">"stderr_tail"</span>: "Error: listen tcp 127.0.0.1:11434: bind: address already in use",
+  <span class="k">"traceback"</span>: null,
+  <span class="k">"git"</span>: { <span class="k">"branch"</span>: "main", <span class="k">"uncommitted"</span>: [] },
+  <span class="k">"env"</span>: { <span class="k">"python"</span>: "3.12.5" }
+}</pre>
+          </div>
+
+          <p>
+            The prose is a performance. The JSON is testimony. If a sentence in the story is not
+            supported by the block underneath it, the block is what you trust — and the 2B model
+            does get details wrong, which is precisely why the block is there.
+            <code>-o ""</code> skips the file entirely when you only want the panels on screen.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="evidence" aria-labelledby="evidence-title">
+      <div class="section-head">
+        <p class="section-kicker">09 · what gets collected</p>
+        <h2 class="section-title" id="evidence-title">Nothing else is recorded.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body doc-body--wide">
+          <p>
+            Everything in this table is written into the report and sent to the model. Nothing
+            outside it is collected.
+          </p>
+
+          <table class="doc-table">
+              <thead>
+                <tr><th scope="col">Field</th><th scope="col">What it holds</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>command</code></td><td>the argv you passed; for <code>analyze</code>, <code>["log:&lt;path&gt;"]</code></td></tr>
+                <tr><td><code>cwd</code></td><td>the working directory</td></tr>
+                <tr><td><code>timestamp</code></td><td>UTC, ISO 8601 — when the evidence was gathered</td></tr>
+                <tr><td><code>exit_code</code></td><td>the process status; negative when a signal killed it (<code>-11</code>), <code>null</code> for <code>analyze</code></td></tr>
+                <tr><td><code>signal</code></td><td>POSIX signal number — <code>11</code> for <code>SIGSEGV</code>; <code>null</code> on a normal exit</td></tr>
+                <tr><td><code>duration_s</code></td><td>seconds from a monotonic clock, three decimals; <code>0.0</code> for <code>analyze</code></td></tr>
+                <tr><td><code>stderr_tail</code></td><td>the last <code>stderr_lines</code> lines — 100 by default</td></tr>
+                <tr><td><code>stdout_tail</code></td><td>the last <code>stderr_lines</code> lines — 100 by default</td></tr>
+                <tr><td><code>traceback</code></td><td><code>stderr</code> from the <code>Traceback</code> marker onward; <code>null</code> when there is none, which is normal for native crashes</td></tr>
+                <tr><td><code>git.branch</code></td><td><code>git rev-parse</code>; <code>null</code> outside a repository</td></tr>
+                <tr><td><code>git.recent_commits</code></td><td><code>git log --oneline -n 10</code></td></tr>
+                <tr><td><code>git.diff_stat</code></td><td><code>git diff --stat HEAD</code></td></tr>
+                <tr><td><code>git.uncommitted</code></td><td><code>git status --porcelain</code> — the footprints of whoever touched it last</td></tr>
+                <tr><td><code>env</code></td><td>the running interpreter&rsquo;s <code>python</code>, <code>platform</code> and <code>cwd</code>; never the environment variables</td></tr>
+                <tr><td><code>recent_files</code></td><td>files under the working directory modified in the last hour: at most 20, three levels deep, skipping <code>.git</code>, <code>.venv</code>, <code>venv</code>, <code>node_modules</code>, <code>__pycache__</code>, <code>.mypy_cache</code>; empty for <code>analyze</code></td></tr>
+                <tr><td><code>source</code></td><td><code>run</code> or <code>analyze</code></td></tr>
+              </tbody>
+            </table>
+
+          <p>
+            The git commands run with a five-second timeout and never raise. Outside a repository
+            the whole <code>git</code> block is <code>null</code>, and the narration simply has less
+            to work with.
+          </p>
+
+          <div class="doc-note">
+            <span class="label">privacy</span>
+            <p>
+              The evidence goes to a model running on <code>localhost</code> through Ollama. No
+              crash data leaves the machine unless you configure a Sentry DSN, and even then what
+              is sent is the trace — operation names and timings — plus any unhandled exception,
+              with PII disabled.
+            </p>
+            <p>
+              The report is written to your disk in plain text. Treat
+              <code>GHOST_REPORT.md</code> like a log file: it contains file paths, a git diff
+              summary, and the last hundred lines your process printed.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="config-file" aria-labelledby="config-file-title">
+      <div class="section-head">
+        <p class="section-kicker">10 · configuration</p>
+        <h2 class="section-title" id="config-file-title">One file, or one environment.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body">
+          <div class="doc-code">
+            <p class="doc-code-label">~/.haunt/config.toml</p>
+<pre>model = "gemma2:9b"
+fallback_model = "gemma2:2b"
+ollama_host = "http://localhost:11434"
+temperature = 0.8
+stderr_lines = 100
+output = "GHOST_REPORT.md"
+# sentry_dsn = "https://&lt;key&gt;@&lt;org&gt;.ingest.sentry.io/&lt;project&gt;"</pre>
+          </div>
+
+          <div class="doc-scroll" role="region" aria-label="Configuration keys" tabindex="0">
+            <table class="doc-table doc-table--wide">
+              <thead>
+                <tr><th scope="col">Key</th><th scope="col">Default</th><th scope="col">Environment</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>model</code></td><td><code>gemma2:9b</code></td><td><code>HAUNT_MODEL</code></td></tr>
+                <tr><td><code>fallback_model</code></td><td><code>gemma2:2b</code></td><td><code>HAUNT_FALLBACK_MODEL</code></td></tr>
+                <tr><td><code>ollama_host</code></td><td><code>http://localhost:11434</code></td><td><code>HAUNT_OLLAMA_HOST</code></td></tr>
+                <tr><td><code>temperature</code></td><td><code>0.8</code></td><td><code>HAUNT_TEMPERATURE</code></td></tr>
+                <tr><td><code>stderr_lines</code></td><td><code>100</code></td><td><code>HAUNT_STDERR_LINES</code></td></tr>
+                <tr><td><code>output</code></td><td><code>GHOST_REPORT.md</code></td><td><code>HAUNT_OUTPUT</code></td></tr>
+                <tr><td><code>sentry_dsn</code></td><td>unset</td><td><code>SENTRY_DSN</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            <code>model</code> and <code>fallback_model</code> take any Ollama tag; an empty
+            <code>fallback_model</code> disables the fallback. <code>temperature</code> is
+            <code>0.0</code>–<code>2.0</code> and lower is more literal. <code>stderr_lines</code>
+            must be <code>10</code> or more. An empty <code>output</code> writes nothing.
+            <code>ollama_host</code> may point at another machine if you run Ollama remotely.
+          </p>
+
+          <p>
+            Out-of-range values are rejected rather than silently clamped:
+            <code>stderr_lines = 5</code> fails with an error naming the field. For a single
+            project, skip the file and set the environment:
+          </p>
+
+          <div class="doc-code">
+<pre><span class="c">$</span> HAUNT_MODEL=gemma2:2b HAUNT_OUTPUT=crash-report.md haunt run -- python app.py</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="model" aria-labelledby="model-title">
+      <div class="section-head">
+        <p class="section-kicker">11 · choosing a model</p>
+        <h2 class="section-title" id="model-title">The narrator is a config value, not a dependency.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body">
+          <ul>
+            <li>
+              <strong><code>gemma2:2b</code></strong> — 1.6 GB, fast enough to feel interactive on a
+              laptop, occasionally wrong about details. It once read <code>return 1 / candles</code>
+              as &ldquo;a candle&rsquo;s value was being divided by one.&rdquo; Good for demos and
+              CI.
+            </li>
+            <li>
+              <strong><code>gemma2:9b</code></strong> — the default. Slower, better prose, better at
+              staying inside the evidence.
+            </li>
+            <li>
+              <strong>Anything else</strong> — <code>llama3.1</code>, <code>qwen2.5</code>, a
+              fine-tune, whatever <code>ollama list</code> shows. <code>--model</code> takes the tag
+              verbatim and nothing else in the tool changes.
+            </li>
+          </ul>
+
+          <p>
+            <code>fallback_model</code> is only tried when the primary model fails
+            <strong>before emitting any text</strong>. If it fails halfway through, the error
+            propagates instead of splicing two different stories together.
+          </p>
+
+          <p>
+            Because the evidence is serialized before it reaches the model, two models narrating
+            the same crash produce different prose over an identical evidence block — apart from
+            the <code>timestamp</code>. The diff comes back with one line changed, and it is the
+            clock:
+          </p>
+
+          <div class="doc-code">
+<pre><span class="c">$</span> haunt analyze crash.log -m gemma2:2b -o fast.md
+<span class="c">$</span> haunt analyze crash.log -m gemma2:9b -o careful.md
+<span class="c">$</span> diff fast.md careful.md     <span class="d"># the story differs; the JSON does not</span></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="sentry" aria-labelledby="sentry-title">
+      <div class="section-head">
+        <p class="section-kicker">12 · sentry tracing</p>
+        <h2 class="section-title" id="sentry-title">Off unless you name a DSN.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body">
+          <p>
+            The <code>sentry-sdk</code> dependency is installed either way; nothing is sent without
+            a DSN.
+          </p>
+
+          <div class="doc-code">
+<pre><span class="c">$</span> export SENTRY_DSN="https://&lt;key&gt;@&lt;org&gt;.ingest.sentry.io/&lt;project&gt;"
+<span class="c">$</span> haunt run -- python app.py</pre>
+          </div>
+
+          <p>
+            One transaction per invocation — <code>haunt.pipeline</code>, named after the command
+            it wrapped — with these spans:
+          </p>
+
+          <table class="doc-table">
+            <thead>
+              <tr><th scope="col">Span</th><th scope="col">Covers</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>haunt.capture</code></td><td>running the wrapped process</td></tr>
+              <tr><td><code>haunt.gather</code></td><td>the traceback, git, environment, recent files</td></tr>
+              <tr><td><code>haunt.narrate</code></td><td>the streaming chat call; the <code>http.client</code> span appears underneath it</td></tr>
+              <tr><td><code>haunt.render</code></td><td>writing the report</td></tr>
+            </tbody>
+          </table>
+
+          <p>
+            Sampling is <code>1.0</code> and <code>send_default_pii</code> is <code>False</code>:
+            the trace records timing and operation names, not the evidence itself.
+          </p>
+
+          <div class="doc-note">
+            <span class="label">the one ordering rule</span>
+            <p>
+              <code>init_sentry()</code> must run <strong>before</strong> the transaction opens.
+              Initializing it afterwards yields a transaction nobody samples, which looks exactly
+              like &ldquo;tracing is broken.&rdquo; <code>flush_sentry()</code> runs before the CLI
+              exits, because a short-lived process would otherwise drop buffered spans.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="recipes" aria-labelledby="recipes-title">
+      <div class="section-head">
+        <p class="section-kicker">13 · recipes</p>
+        <h2 class="section-title" id="recipes-title">Things worth doing with it.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body">
+          <h3>Wrap a failing script and keep the report</h3>
+          <div class="doc-code">
+<pre><span class="c">$</span> haunt run -- python app.py
+<span class="d"># the report lands in ./GHOST_REPORT.md</span></pre>
+          </div>
+
+          <h3>Record evidence in CI, with no model on the runner</h3>
+          <p>
+            The evidence is still written, the exit code is still propagated, and nothing is
+            narrated.
+          </p>
+          <div class="doc-code">
+<pre><span class="c">$</span> haunt run --no-narrate -o crash-evidence.md -- ./run-tests.sh</pre>
+          </div>
+
+          <h3>Reproduce a native crash</h3>
+          <div class="doc-code">
+<pre><span class="c">$</span> cat &gt; segv.py &lt;&lt;'PY'
+import os, signal
+os.kill(os.getpid(), signal.SIGSEGV)
+PY
+<span class="c">$</span> haunt run -- python segv.py; echo "exit=$?"
+exit=11</pre>
+          </div>
+          <p>
+            There is no traceback in that report. The narration is built from the exit code, the
+            signal and the last thing the process said — which is the whole point of capturing more
+            than a stack trace.
+          </p>
+
+          <h3>Narrate a log from somewhere else</h3>
+          <div class="doc-code">
+<pre><span class="c">$</span> kubectl logs crashy-pod --previous &gt; crash.log
+<span class="c">$</span> haunt analyze crash.log -o postmortem.md</pre>
+          </div>
+
+          <h3>Keep a shell&rsquo;s exit status while reading the story</h3>
+          <div class="doc-code">
+<pre><span class="c">$</span> haunt run --exit-zero -- ./job.sh</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="troubleshooting" aria-labelledby="troubleshooting-title">
+      <div class="section-head">
+        <p class="section-kicker">14 · troubleshooting</p>
+        <h2 class="section-title" id="troubleshooting-title">The ghost is silent. Why.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body doc-body--wide">
+          <div class="doc-scroll" role="region" aria-label="Troubleshooting reference" tabindex="0">
+            <table class="doc-table doc-table--wide doc-table--trouble">
+              <thead>
+                <tr><th scope="col">Symptom</th><th scope="col">Cause</th><th scope="col">Fix</th></tr>
+              </thead>
+            <tbody>
+              <tr>
+                <td><code>The ghost did not answer.</code></td>
+                <td>Ollama is not running, or the model is not pulled.</td>
+                <td><code>ollama serve</code>, then <code>ollama pull gemma2:2b</code>. The evidence is still written to <code>-o</code>.</td>
+              </tr>
+              <tr>
+                <td><code>Could not start that command.</code>, exit <code>127</code></td>
+                <td>The binary does not exist or is not executable.</td>
+                <td>Check the path; <code>haunt</code> uses the shell&rsquo;s exit code for this.</td>
+              </tr>
+              <tr>
+                <td><code>No such option: -c</code></td>
+                <td>The wrapped command&rsquo;s flags were parsed as <code>haunt</code>&rsquo;s.</td>
+                <td>Put <code>--</code> before the command.</td>
+              </tr>
+              <tr>
+                <td>No output from the wrapped program</td>
+                <td>Output is captured for evidence, not streamed.</td>
+                <td>Read the tails in the report, or run the program directly and <code>haunt analyze</code> its log.</td>
+              </tr>
+              <tr>
+                <td>No report where you expected one</td>
+                <td><code>-o ""</code> was passed, or the process exited <code>0</code>.</td>
+                <td>A surviving process writes nothing. Name the path explicitly.</td>
+              </tr>
+              <tr>
+                <td><code>GHOST_REPORT.md</code> keeps being overwritten</td>
+                <td>That is the default path.</td>
+                <td><code>-o</code> per run, or <code>-o ""</code> for panels only.</td>
+              </tr>
+              <tr>
+                <td>A long log is truncated in the report</td>
+                <td>Only the last <code>stderr_lines</code> lines are kept.</td>
+                <td>Raise <code>stderr_lines</code> in the config.</td>
+              </tr>
+              <tr>
+                <td>Nothing appears in Sentry</td>
+                <td><code>SENTRY_DSN</code> unset, or Sentry initialized after the transaction opened.</td>
+                <td>Set the DSN; keep init before the transaction.</td>
+              </tr>
+              <tr>
+                <td>A validation error on startup</td>
+                <td><code>temperature</code> outside <code>0–2</code>, or <code>stderr_lines</code> below <code>10</code>.</td>
+                <td>Fix <code>~/.haunt/config.toml</code>; the message names the field.</td>
+              </tr>
+              <tr>
+                <td><code>haunt demo</code> is slow</td>
+                <td><code>gemma2:9b</code> on a small machine.</td>
+                <td><code>haunt demo -m gemma2:2b</code>.</td>
+              </tr>
+            </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="how" aria-labelledby="how-title">
+      <div class="section-head">
+        <p class="section-kicker">15 · how it works</p>
+        <h2 class="section-title" id="how-title">Five small modules, one contract.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body">
+          <div class="doc-code">
+            <p class="doc-code-label">the pipeline</p>
+<pre>capture.run_command → gather.build_evidence → prompt.build_messages
+                    → narrator.NarratorEngine → render.render_story / write_report</pre>
+          </div>
+          <ul>
+            <li><strong><code>capture.py</code></strong> runs the process, recording the exit code, signal, duration and both output streams.</li>
+            <li><strong><code>gather.py</code></strong> fills in the traceback, the git context, the environment fingerprint and the recently modified files.</li>
+            <li><strong><code>prompt.py</code></strong> serializes the evidence as JSON around the Ghost Narrator system prompt: five fixed headings, no invented facts, the word &ldquo;unknown&rdquo; allowed.</li>
+            <li><strong><code>narrator.py</code></strong> streams the model from Ollama, with the Sentry spans and the fallback model.</li>
+            <li><strong><code>render.py</code></strong> parses the Markdown into Rich panels and writes the report with the evidence appendix.</li>
+          </ul>
+          <p>
+            Every stage passes the same <code>Evidence</code> object along, which is why the
+            pipeline is testable without a model: 21 tests, no network.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="limits" aria-labelledby="limits-title">
+      <div class="section-head">
+        <p class="section-kicker">16 · limits</p>
+        <h2 class="section-title" id="limits-title">What it will not do.</h2>
+      </div>
+      <div class="section-body">
+        <div class="doc-body">
+          <ul>
+            <li><strong>One process, not a tree.</strong> A parent that spawns children and exits leaves the children unobserved.</li>
+            <li><strong>Captured output, not a terminal.</strong> Programs that need a TTY behave differently under <code>haunt</code> than under your shell.</li>
+            <li><strong>POSIX exit status.</strong> Signal numbers assume a POSIX system; the project is developed and tested on Linux.</li>
+            <li><strong>The model can still be wrong.</strong> The prompt forbids invented facts and the evidence is attached, but a small model can misread a line. The appendix is the part you trust.</li>
+            <li><strong><code>analyze</code> is blind to exit codes and durations.</strong> A log is a partial witness.</li>
+            <li><strong>It does not fix your bug.</strong> It points at the line, quotes the evidence, and gets out of the way.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    <p>Tales<br>MIT</p>
+    <div>
+      <p class="foot-links">
+        <a href="./">Overview</a>
+        <a href="https://github.com/Ewan-Dkhar/Tales">Source</a>
+        <a href="https://github.com/Ewan-Dkhar/Tales/blob/main/GUIDE.md">This guide on GitHub</a>
+        <a href="https://dev.to/ewansalandkhar">The write-up</a>
+      </p>
+      <p class="foot-note">
+        Built for the DEV Hacktoberfest Open-Source AI Challenge, Week 4 — &ldquo;Ghost in the
+        Machine.&rdquo; Hacktoberfest 2026 is powered by MLH and DEV, presented by DigitalOcean.
+        This project is an entry, not an official product.
+      </p>
+    </div>
+  </footer>
+
+</div>
+<script src="main.js" defer></script>
+</body>
+</html>

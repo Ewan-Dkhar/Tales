@@ -14,6 +14,10 @@ from .models import Evidence
 
 _SECTION_RE = re.compile(r"(?m)^##\s+(.+)$")
 
+_NO_STORY = (
+    "_The ghost did not speak. The evidence it was given is recorded below, unchanged._"
+)
+
 
 def parse_sections(text: str) -> list[tuple[str, str]]:
     """Split Markdown into (heading, body) pairs on level-2 headings."""
@@ -47,12 +51,14 @@ def render_story(text: str, console: Console | None = None) -> None:
         )
 
 
-def build_report_markdown(text: str, evidence: Evidence) -> str:
+def build_report_markdown(text: str | None, evidence: Evidence) -> str:
+    """Story first, then the evidence. Without a story the evidence still ships."""
     appendix = json.dumps(evidence.to_dict(), indent=2, default=str)
+    story = (text or "").strip() or _NO_STORY
     return (
         "# 👻 Ghost Report\n\n"
         f"_Summoned by haunt at {evidence.timestamp}_\n\n"
-        f"{text.strip()}\n\n"
+        f"{story}\n\n"
         "---\n\n"
         "## Raw Evidence\n\n"
         "```json\n"
@@ -61,7 +67,7 @@ def build_report_markdown(text: str, evidence: Evidence) -> str:
     )
 
 
-def write_report(text: str, evidence: Evidence, path: str | Path) -> Path:
+def write_report(text: str | None, evidence: Evidence, path: str | Path) -> Path:
     out = Path(path)
     out.write_text(build_report_markdown(text, evidence), encoding="utf-8")
     return out

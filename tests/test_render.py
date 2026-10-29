@@ -32,3 +32,10 @@ def test_report_has_evidence_appendix():
     assert "# 👻 Ghost Report" in report
     assert "## Raw Evidence" in report
     assert '"exit_code": 1' in report
+
+
+def test_report_without_story_still_carries_evidence():
+    report = build_report_markdown(None, _evidence())
+    assert "The ghost did not speak" in report
+    assert "## Raw Evidence" in report
+    assert '"exit_code": 1' in report
