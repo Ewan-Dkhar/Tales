@@ -62,6 +62,16 @@ output = "GHOST_REPORT.md"
 Environment overrides: `HAUNT_MODEL`, `HAUNT_OLLAMA_HOST`, `HAUNT_TEMPERATURE`,
 `HAUNT_OUTPUT`, `SENTRY_DSN`.
 
+## Sentry tracing
+
+Set a DSN to trace the pipeline (`haunt.pipeline` transaction with `capture`, `gather`,
+`narrate`, and `render` spans). Without a DSN the tracing path is a no-op.
+
+```bash
+export SENTRY_DSN="https://<key>@<org>.ingest.sentry.io/<project>"
+# or add `sentry_dsn = "..."` to ~/.haunt/config.toml
+```
+
 ## Development
 
 ```bash
