@@ -66,8 +66,14 @@ ollama pull gemma2:2b
 Check that the pieces agree with each other:
 
 ```bash
-haunt config     # the resolved configuration, as JSON
-haunt demo       # a bundled crash, narrated — the whole pipeline in one command
+haunt config        # the resolved configuration, as JSON
+haunt demo          # a bundled crash, narrated — the whole pipeline in one command
+```
+
+And wrap the smallest real thing you can, to see exit-code propagation:
+
+```bash
+haunt run -- python -c "raise SystemExit(1)"; echo "exit=$?"   # exit=1
 ```
 
 ---
