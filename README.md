@@ -72,6 +72,20 @@ export SENTRY_DSN="https://<key>@<org>.ingest.sentry.io/<project>"
 # or add `sentry_dsn = "..."` to ~/.haunt/config.toml
 ```
 
+## Landing page
+
+The site in `docs/` is plain static HTML, CSS and a little JavaScript — no build step.
+Served by GitHub Pages from `main` at `https://ewan-dkhar.github.io/Tales/`.
+
+```bash
+python3 -m http.server -d docs 8099   # preview locally
+```
+
+`docs/index.html` uses a marginalia layout: the left margin carries the timeline of the
+demo run, the column carries the argument, and the two-ink comparison sets recorded
+evidence in mono against narrated prose in serif. The hero line is the model's actual
+first sentence about the bundled demo crash.
+
 ## Development
 
 ```bash

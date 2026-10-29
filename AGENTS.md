@@ -45,6 +45,7 @@ Flow: `capture.run_command` → `gather.build_evidence` → `prompt.build_messag
 - Sentry is configured for project `tales` (org `ewansalan-dkhar`) via `~/.haunt/config.toml`, which is outside the repo. Never commit the DSN.
 - Prompt must forbid invented facts; keep the raw-evidence appendix in `render.build_report_markdown`.
 - `demo_crash.py` is intentionally a crashing module used by `haunt demo`; do not "fix" the division by zero.
+- `docs/` is the landing page (static, no build step), served by GitHub Pages from `main`. Keep it dependency-free — no bundler, no framework — and keep its copy honest: every example on the page must come from a real run.
 
 ## Config
 

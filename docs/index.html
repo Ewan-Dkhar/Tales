@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tales — the haunted post-mortem narrator</title>
+<meta name="description" content="haunt runs your process, gathers the evidence when it dies, and has a local open-weight model narrate the post-mortem as a ghost story. Offline by default.">
+<meta name="theme-color" content="#e8e5eb">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Tales — the haunted post-mortem narrator">
+<meta property="og:description" content="A local open-weight model narrates your crash as a ghost story. The evidence ships with the story, so you can check what the ghost invented.">
+<meta property="og:url" content="https://tales.tech/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="shell">
+
+  <header class="masthead">
+    <a class="wordmark" href="/">Tales<span>haunt, a post-mortem narrator</span></a>
+    <nav aria-label="Sections">
+      <a href="#how">How it works</a>
+      <a href="#report">The report</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/Ewan-Dkhar/Tales">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main">
+
+    <section class="hero" aria-labelledby="hero-quote">
+      <ol class="timeline" aria-label="Timeline of the demo run">
+        <li>
+          <time datetime="PT0.000S">00:00.000</time><b>spawn</b>
+          <p>python -m haunt.demo_crash</p>
+        </li>
+        <li>
+          <time datetime="PT0.009S">00:00.009</time><b>stderr</b>
+          <p>Lighting the candles&hellip;</p>
+        </li>
+        <li>
+          <time datetime="PT0.019S">00:00.019</time><b>stderr</b>
+          <p>The room grows cold.</p>
+        </li>
+        <li>
+          <time datetime="PT0.022S">00:00.022</time><b class="death">panic</b>
+          <p class="death">ZeroDivisionError: division by zero</p>
+        </li>
+        <li>
+          <time datetime="PT3.584S">00:03.584</time><b>render</b>
+          <p>GHOST_REPORT.md</p>
+        </li>
+        <li class="note">from a single traced run</li>
+      </ol>
+
+      <div class="hero-body">
+        <p class="provenance">Written by <strong>gemma2:2b</strong> in 3.6 seconds, on the machine that crashed.</p>
+
+        <h1 class="ghost-quote" id="hero-quote">
+          <span class="sr-only">Tales, a post-mortem narrator. Sample narration:</span>
+          <span class="stream">The crash site was a dusty attic, illuminated by a single flickering bulb.</span>
+        </h1>
+
+        <p class="lede">
+          That is not a prompt. <code>haunt</code> ran a Python program, watched it die, and collected
+          the traceback, the git diff, the exit code and the last lines of stderr. Then it handed the
+          evidence to a local open-weight model and asked it for a post-mortem in the form of a ghost
+          story. The model wrote the eulogy. <em>Nothing left the machine.</em>
+        </p>
+
+        <div class="install" id="install">
+          <div class="install-head">
+            <span><em>install</em> &nbsp;— requires Python 3.11+ and Ollama</span>
+            <button class="copy" type="button" data-copy="install-cmds" aria-describedby="copy-status">Copy</button>
+            <span class="sr-only" id="copy-status" role="status" aria-live="polite"></span>
+          </div>
+<pre id="install-cmds"><span class="c">$</span> git clone https://github.com/Ewan-Dkhar/Tales
+<span class="c">$</span> cd Tales &amp;&amp; uv venv &amp;&amp; uv pip install -e .
+<span class="c">$</span> ollama pull gemma2:2b
+<span class="c">$</span> .venv/bin/haunt demo
+<span class="d"># the demo crashes on purpose, so there is something to bury</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="how" aria-labelledby="how-title">
+      <div class="section-head">
+        <p class="section-kicker">the ghost may invent prose,<br>not facts</p>
+        <h2 class="section-title" id="how-title">The story is allowed to be a story. The evidence is not.</h2>
+      </div>
+
+      <div class="section-body">
+        <div class="flow flow-wide">
+          <div class="compare-grid">
+            <div>
+              <p class="compare-label">Recorded by haunt</p>
+              <div class="evidence">
+<pre><span class="k">"command"</span>: ["python", "-m",
+            "haunt.demo_crash"],
+<span class="k">"exit_code"</span>: <span class="bad">1</span>,
+<span class="k">"signal"</span>: null,
+<span class="k">"duration_s"</span>: 0.022,
+<span class="k">"stderr_tail"</span>: "Lighting the candles...
+The room grows cold.
+Traceback (most recent call last):
+  File "demo_crash.py", line 12
+    return 1 / candles
+ZeroDivisionError: division by zero",
+<span class="k">"git"</span>: {
+  <span class="k">"branch"</span>: "main",
+  <span class="k">"uncommitted"</span>: [
+    "M haunt/cli.py"
+  ]
+},
+<span class="k">"env"</span>: { "python": "3.12.5" }</pre>
+                <p class="caption">Abridged for width. The full block is appended to every report.</p>
+              </div>
+            </div>
+
+            <div>
+              <p class="compare-label">Narrated by the model</p>
+              <div class="narration">
+                <blockquote>
+                  <p>&ldquo;The process, a haunted demo named &lsquo;haunt.demo_crash&rsquo;, met its
+                  end with a chilling &lsquo;ZeroDivisionError: division by zero.&rsquo; This was no mere
+                  technical failure; it was a manifestation of the program&rsquo;s own chillingly
+                  poetic demise.&rdquo;</p>
+                </blockquote>
+                <p class="caption">Verbatim from <code>GHOST_REPORT.md</code>.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="prose prose-after">
+            <p>
+              The prompt forbids invented facts and the report keeps the raw evidence as an appendix, so
+              the prose can always be audited against the JSON. The model is not asked to diagnose
+              anything it cannot see: it gets the traceback, the files you changed and never committed,
+              the branch, the exit code, and the last hundred lines the process managed to say.
+            </p>
+            <p>
+              Everything runs on the local Ollama daemon. There is no API key, no account, and no network
+              call to anyone else — the crash data goes into a prompt on your own disk.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="report" aria-labelledby="report-title">
+      <div class="section-head">
+        <p class="section-kicker">five sections,<br>in the order they are needed</p>
+        <h2 class="section-title" id="report-title">Every report follows the same five movements.</h2>
+      </div>
+
+      <div class="section-body">
+        <ol class="parts">
+          <li>
+            <span class="num" aria-hidden="true"></span>
+            <div>
+              <h3>The Crash Site</h3>
+              <p>Where it happened: the command, the working directory, the commit you were on, and how long the process survived.</p>
+            </div>
+          </li>
+          <li>
+            <span class="num" aria-hidden="true"></span>
+            <div>
+              <h3>Last Words</h3>
+              <p>What the process printed on the way down — the exit code, any signal that killed it, and the tail of stdout and stderr.</p>
+            </div>
+          </li>
+          <li>
+            <span class="num" aria-hidden="true"></span>
+            <div>
+              <h3>Prime Suspects</h3>
+              <p>The traceback frame that raised, the files you changed but never committed, and the Python and platform fingerprint.</p>
+            </div>
+          </li>
+          <li>
+            <span class="num" aria-hidden="true"></span>
+            <div>
+              <h3>The Epitaph</h3>
+              <p>The one line that mattered, quoted back at you, and the sentence that belongs on the tombstone.</p>
+            </div>
+          </li>
+          <li>
+            <span class="num" aria-hidden="true"></span>
+            <div>
+              <h3>How to Prevent the Haunting</h3>
+              <p>One concrete change, argued from the evidence rather than from the model&rsquo;s imagination.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section" id="spec" aria-labelledby="spec-title">
+      <div class="section-head">
+        <p class="section-kicker">the fine print,<br>which is the interesting part</p>
+        <h2 class="section-title" id="spec-title">What it will and will not do.</h2>
+      </div>
+
+      <div class="section-body">
+        <table class="spec">
+          <tbody>
+            <tr>
+              <th scope="row">Runs offline</th>
+              <td>By default nothing leaves the machine. A sink has to be configured explicitly before any crash data is sent anywhere.</td>
+            </tr>
+            <tr>
+              <th scope="row">Model swappable</th>
+              <td>Gemma 2 is the default because it runs on a laptop. <code>--model</code> takes any Ollama tag, or set <code>HAUNT_MODEL</code>.</td>
+            </tr>
+            <tr>
+              <th scope="row">Native crashes</th>
+              <td>A segfault or an OOM kill leaves no traceback. <code>haunt</code> still writes the report from the exit code, the signal, and whatever reached stderr.</td>
+            </tr>
+            <tr>
+              <th scope="row">The report</th>
+              <td><code>GHOST_REPORT.md</code> holds the story, and below it the raw evidence as JSON, so a claim in the prose can be checked against what was recorded.</td>
+            </tr>
+            <tr>
+              <th scope="row">Existing logs</th>
+              <td><code>haunt analyze crash.log</code> narrates a death that already happened, from a file you kept.</td>
+            </tr>
+            <tr>
+              <th scope="row">Traced</th>
+              <td>One <code>haunt.pipeline</code> transaction per run, with spans for capture, gather, narrate and render — including the HTTP call to Ollama.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="closing" aria-labelledby="closing-title">
+      <div class="section-head">
+        <p class="section-kicker">four commands</p>
+        <h2 class="section-title" id="closing-title">Point it at something that dies.</h2>
+      </div>
+      <div class="section-body">
+        <div class="flow">
+          <ul class="closing-cmds">
+            <li><code>haunt run -- python app.py</code><span>wrap a process, narrate it if it fails</span></li>
+            <li><code>haunt run --no-narrate -- ./bin</code><span>collect the evidence and stay quiet</span></li>
+            <li><code>haunt analyze crash.log</code><span>narrate a log you already have</span></li>
+            <li><code>haunt demo</code><span>bury the bundled program</span></li>
+          </ul>
+          <p class="caption caption-gap">Pass the command after <code>--</code>, or the flags of the wrapped program are read as <code>haunt</code>&rsquo;s own.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    <p>Tales<br>MIT</p>
+    <div>
+      <p class="foot-links">
+        <a href="https://github.com/Ewan-Dkhar/Tales">Source</a>
+        <a href="https://dev.to/ewansalandkhar">The write-up</a>
+        <a href="https://ewansalan-dkhar.sentry.io/explore/traces/?project=4512338474238032">Traces</a>
+        <a href="https://hacktoberfest.com">Hacktoberfest</a>
+      </p>
+      <p class="foot-note">
+        Built for the DEV Hacktoberfest Open-Source AI Challenge, Week 4 — &ldquo;Ghost in the Machine.&rdquo;
+        Hacktoberfest 2026 is powered by MLH and DEV, presented by DigitalOcean. This project is an
+        entry, not an official product.
+      </p>
+    </div>
+  </footer>
+
+</div>
+<script src="main.js" defer></script>
+</body>
+</html>
