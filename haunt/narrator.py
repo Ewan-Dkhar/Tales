@@ -38,6 +38,28 @@ def span(op: str, description: str | None = None) -> Iterator[None]:
         yield
 
 
+@contextmanager
+def transaction(name: str, op: str = "haunt.pipeline") -> Iterator[None]:
+    """Root transaction for the whole pipeline; a no-op without Sentry."""
+    try:
+        import sentry_sdk
+
+        with sentry_sdk.start_transaction(op=op, name=name):
+            yield
+    except ImportError:  # pragma: no cover - optional dependency
+        yield
+
+
+def flush_sentry() -> None:
+    """Make sure buffered events/spans are sent before a short-lived CLI exits."""
+    try:
+        import sentry_sdk
+
+        sentry_sdk.flush(timeout=5)
+    except ImportError:  # pragma: no cover - optional dependency
+        pass
+
+
 class NarratorEngine:
     def __init__(self, config: Config):
         self.config = config

@@ -12,7 +12,7 @@ from .capture import run_command
 from .config import load_config
 from .gather import build_evidence, evidence_from_log
 from .models import Evidence
-from .narrator import NarratorEngine, init_sentry, span
+from .narrator import NarratorEngine, flush_sentry, init_sentry, span, transaction
 from .render import render_story, write_report
 
 app = typer.Typer(
@@ -74,11 +74,15 @@ def run(
         config.output = output
 
     init_sentry(config)
-    with span("haunt.capture", "run command"):
-        raw = run_command(cmd)
-    with span("haunt.gather", "gather evidence"):
-        evidence = build_evidence(raw, stderr_lines=config.stderr_lines)
-    _narrate(evidence, config, no_narrate, config.output)
+    try:
+        with transaction(f"haunt run: {' '.join(cmd)}"):
+            with span("haunt.capture", "run command"):
+                raw = run_command(cmd)
+            with span("haunt.gather", "gather evidence"):
+                evidence = build_evidence(raw, stderr_lines=config.stderr_lines)
+            _narrate(evidence, config, no_narrate, config.output)
+    finally:
+        flush_sentry()
     _exit_for(evidence, exit_zero)
 
 
@@ -102,9 +106,13 @@ def analyze(
         raise typer.Exit(code=2)
 
     init_sentry(config)
-    with span("haunt.gather", "gather evidence"):
-        evidence = evidence_from_log(logfile, stderr_lines=config.stderr_lines)
-    _narrate(evidence, config, no_narrate or bool(ctx.args), config.output)
+    try:
+        with transaction(f"haunt analyze: {logfile}"):
+            with span("haunt.gather", "gather evidence"):
+                evidence = evidence_from_log(logfile, stderr_lines=config.stderr_lines)
+            _narrate(evidence, config, no_narrate or bool(ctx.args), config.output)
+    finally:
+        flush_sentry()
 
 
 @app.command()
@@ -121,11 +129,15 @@ def demo(
         config.output = output
 
     init_sentry(config)
-    with span("haunt.capture", "run demo crash"):
-        raw = run_command([sys.executable, "-m", "haunt.demo_crash"])
-    with span("haunt.gather", "gather evidence"):
-        evidence = build_evidence(raw, stderr_lines=config.stderr_lines)
-    _narrate(evidence, config, no_narrate, config.output)
+    try:
+        with transaction("haunt demo"):
+            with span("haunt.capture", "run demo crash"):
+                raw = run_command([sys.executable, "-m", "haunt.demo_crash"])
+            with span("haunt.gather", "gather evidence"):
+                evidence = build_evidence(raw, stderr_lines=config.stderr_lines)
+            _narrate(evidence, config, no_narrate, config.output)
+    finally:
+        flush_sentry()
     _exit_for(evidence, force_zero=True)
 
 

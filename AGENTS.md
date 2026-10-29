@@ -41,7 +41,8 @@ Run both before claiming a change is complete.
 Flow: `capture.run_command` → `gather.build_evidence` → `prompt.build_messages` → `narrator.NarratorEngine.narrate` (streams Gemma) → `render.render_story` + `render.write_report`.
 
 - `models.Evidence` is the single data contract passed between stages. Add fields there and in `gather`, not ad hoc dicts.
-- `narrator.span()` is a no-op unless `SENTRY_DSN` is set. Do not assume a Sentry hub exists.
+- `narrator.transaction()` opens the root Sentry transaction; `span()` and `flush_sentry()` are no-ops unless `SENTRY_DSN` is set. Commands init Sentry *before* the transaction — keep that order or traces won't be sampled.
+- Sentry is configured for project `tales` (org `ewansalan-dkhar`) via `~/.haunt/config.toml`, which is outside the repo. Never commit the DSN.
 - Prompt must forbid invented facts; keep the raw-evidence appendix in `render.build_report_markdown`.
 - `demo_crash.py` is intentionally a crashing module used by `haunt demo`; do not "fix" the division by zero.
 
